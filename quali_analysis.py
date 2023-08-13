@@ -22,7 +22,26 @@ fastf1.Cache.enable_cache(r"M:\Coding\F1DataAnalysis\FastF1Cache")
 # From this output each DF can be averaged and calculated. This prevents scraping the data more than once, which is the rate limiting step.
 
 def return_race_quali_ranks(race: str, quali_type: str | int = "Q" or 3, includes_anomalous_quali: bool = False):
-    
+    """
+    Return ranked qualifying lap data for a specific race session.
+
+    This function retrieves the qualifying lap data for a specific race session and calculates ranks for drivers
+    based on their qualifying performance. Anomalies in lap times can also be filtered out.
+
+    Args:
+        race (str): The name of the race session.
+        quali_type (str or int, optional): The type of qualifying session.
+                                           Use "Q" for standard qualifying or 3 for sprint qualifying.
+                                           Defaults to "Q".
+        includes_anomalous_quali (bool, optional): Whether to include anomalies in lap times.
+                                                   Defaults to False.
+
+    Returns:
+        dict: A dictionary containing two DataFrames:
+            - "Fastest Laps": DataFrame with ranks for fastest lap times and sector times.
+            - "Average Laps": DataFrame with ranks for average lap times and sector times.
+              Both DataFrames include columns for Driver, Team, lap times, ranks, and percentage off pace.
+    """    
     
     Q = fastf1.get_session(2023, race, quali_type) # Update logic here to stop trying to load races before the date of their arrival.
     Q.load()
@@ -40,7 +59,32 @@ def return_race_quali_ranks(race: str, quali_type: str | int = "Q" or 3, include
 
 
 def scrape_all_quali_laps(includes_anomalous_quali: bool = False):   
-    
+    """
+    Scrape qualifying data for races and sprints.
+
+    This function scrapes qualifying data for all specified races and associated sprints, if applicable.
+    It uses the provided parameters to fetch qualifying ranks for each race and sprint.
+
+    Args:
+        includes_anomalous_quali (bool, optional): If True, includes anomalous qualifying data. Defaults to False.
+
+    Returns:
+        dict: A dictionary containing scraped qualifying data for races and sprints.
+              The structure is as follows:
+              {
+                  "Races": {
+                      "Race1": [quali_rank_1, quali_rank_2, ...],
+                      "Race2": [quali_rank_1, quali_rank_2, ...],
+                      ...
+                  },
+                  "Sprints": {
+                      "Sprint1": [sprint_quali_rank_1, sprint_quali_rank_2, ...],
+                      "Sprint2": [sprint_quali_rank_1, sprint_quali_rank_2, ...],
+                      ...
+                  }
+              }
+              If scraping encounters an error for any race, it will be omitted from the dictionary.
+    """
     print("Scraping qualifying data")
    
     race_output = {}
@@ -67,6 +111,24 @@ def scrape_all_quali_laps(includes_anomalous_quali: bool = False):
 
 
 def filter_ranks_by_downforce(qualifying_ranks, downforce: int):
+    """
+    Filter qualifying ranks based on downforce level.
+
+    This function filters the provided qualifying rank data based on the specified downforce level.
+    If `downforce` is 0, the original ranking data for races and sprints is returned.
+    Otherwise, the function filters the ranking data to include only tracks associated with the given downforce level.
+
+    Args:
+        qualifying_ranks (dict): A dictionary containing qualifying rank data for races and sprints.
+        downforce (int): The downforce level to filter by. Use 0 to return all tracks.
+
+    Returns:
+        tuple: A tuple containing two dictionaries:
+            - race_ranks: A dictionary containing filtered race ranking data based on the downforce level.
+            - sprint_ranks: A dictionary containing filtered sprint ranking data based on the downforce level.
+                          If `downforce` is 0, the original unfiltered data is returned.
+    """
+    
     if not downforce:
         return qualifying_ranks["Races"], qualifying_ranks["Sprints"]
     else:
@@ -79,6 +141,25 @@ def filter_ranks_by_downforce(qualifying_ranks, downforce: int):
 
 
 def return_df_q_rankings(qualifying_ranks, downforce: int):
+    """
+    Calculate pace rankings based on qualifying lap data.
+
+    This function calculates pace rankings based on the provided qualifying rank data.
+    Rankings are calculated for drivers and teams based on fastest lap and average lap times.
+    Lead driver rankings are also calculated for both fastest and average lap times.
+
+    Args:
+        qualifying_ranks (dict): A dictionary containing qualifying rank data for races and sprints.
+        downforce (int): The downforce level to filter by.
+
+    Returns:
+        dict: A dictionary containing DataFrames for different ranking categories:
+            - "Lead Driver": DataFrame containing lead driver rankings for fastest and average lap times.
+            - "Team": DataFrame containing team rankings for fastest and average lap times.
+            - "Driver": DataFrame containing driver rankings for fastest and average lap times.
+              Each DataFrame includes columns for Team/Driver, FL Average Rank, Avg pct of FL pace,
+              AV Average Rank, and Avg pct of avg pace.
+    """    
     
     print("Calculating pace rankings")
     #filter races by DF here
@@ -264,180 +345,8 @@ def return_df_q_rankings(qualifying_ranks, downforce: int):
     return output
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# def Q_lap_pace_calculator(selection: str = "Team" or "Driver" or "Lead Driver", downforce: int | None = None, includes_anomalous_quali: bool = False):
-      
-#     if selection == "Driver":
-#         names = DRIVERS.keys()
-#         inputdf = pd.DataFrame(columns=["Driver", "Team", "FL Average Rank", "Avg pct of FL pace", "AV Average Rank"])
-        
-#     else:
-#         names = CONSTRUCTORS.keys()
-#         inputdf = pd.DataFrame(columns=["Team", "FL Average Rank", "Avg pct of FL pace", "AV Average Rank"])
-        
-#     fl_ranks, av_ranks, fl_pct, av_pct = {name: [] for name in names}, {name: [] for name in names}, {name: [] for name in names}, {name: [] for name in names}
-    
-#     if not downforce or downforce==0:
-#         races = RACES
-        
-#     else:
-#         races = DF_RACES[downforce]
-    
-#     for race in races:
-#         print(f"scraping {race}")
-#         try:
-#             def scrape_quali_laps(race, fl_ranks, av_ranks, fl_pct, av_pct, includes_anomalous_quali: bool, quali_type: str | int = "Q" or 3):   
-#                 Q = fastf1.get_session(2023, race, quali_type) # Update logic here to stop trying to load races before the date of their arrival.
-#                 Q.load()
-
-#                 quali_filtered_laps, poor_quali_ranks = filter_anomalous_Q_laps(Q)
-                
-#                 if includes_anomalous_quali:
-#                     Q_ranks = return_ranked_Q_laps(quali_filtered_laps, poor_quali_ranks)
-                    
-#                 else:
-#                     Q_ranks = return_ranked_Q_laps(quali_filtered_laps)
-                
-                
-#                 if selection == "Team":
-#                     for index, row in Q_ranks["Fastest Laps"].iterrows():
-#                         team = row['Team']
-#                         rank = row['FastestLapRank']
-#                         pct = row['pct of pace']
-
-#                         fl_ranks[team].append(rank)
-#                         fl_pct[team].append(pct)
-                                
-                    
-#                     for index, row in Q_ranks["Average Laps"].iterrows():
-#                         team = row['Team']
-#                         rank = row['AverageLapRank']
-#                         pct = row['pct of pace']
-
-#                         av_ranks[team].append(rank)
-#                         av_pct[team].append(pct)
-                
-                        
-#                 elif selection == "Driver":
-#                     for index, row in Q_ranks["Fastest Laps"].iterrows():
-#                         team = row['Driver']
-#                         rank = row['FastestLapRank']
-#                         pct = row['pct of pace']
-
-#                         fl_ranks[team].append(rank)
-#                         fl_pct[team].append(pct)
-                                
-                    
-#                     for index, row in Q_ranks["Average Laps"].iterrows():
-#                         team = row['Driver']
-#                         rank = row['AverageLapRank']
-#                         pct = row['pct of pace']
-
-#                         av_ranks[team].append(rank)  
-#                         av_pct[team].append(pct)     
-                            
-#                 elif selection == "Lead Driver": 
-#                     # Counting the rank could lead to numbers above 10. We want just the fastest times as a true % comparison of pace
-#                     # We want to eliminate bottom driver of each team, then recalculate the ranks.
-#                     #
-#                     FL_LD_ranks = pick_lead_driver(Q_ranks["Fastest Laps"], selection="FL")
-#                     AV_LD_ranks = pick_lead_driver(Q_ranks["Average Laps"], selection="AV")
-                    
-#                     for index, row in FL_LD_ranks.iterrows(): #type: ignore
-#                         team = row['Team']
-#                         rank = row['FastestLapRank']
-#                         pct = row['pct of pace']
-
-#                         fl_ranks[team].append(rank)
-#                         fl_pct[team].append(pct)
-                                
-                    
-#                     for index, row in AV_LD_ranks.iterrows(): #type: ignore
-#                         team = row['Team']
-#                         rank = row['AverageLapRank']
-#                         pct = row['pct of pace']
-
-#                         av_ranks[team].append(rank)
-#                         av_pct[team].append(pct)
-            
-#             scrape_quali_laps(race, 
-#                               fl_ranks=fl_ranks, av_ranks=av_ranks, fl_pct=fl_pct, av_pct=av_pct,
-#                               includes_anomalous_quali=includes_anomalous_quali,
-#                               quali_type="Q")
-        
-#             if race in SPRINTS:
-#                 scrape_quali_laps(race, 
-#                               fl_ranks=fl_ranks, av_ranks=av_ranks, fl_pct=fl_pct, av_pct=av_pct,
-#                               includes_anomalous_quali=includes_anomalous_quali,
-#                               quali_type=3)
-#         except Exception as e:
-#             print(e)
-#             break
-         
-    
-#     if selection == "Driver":
-#         for driver in fl_ranks:
-#             team = get_constructor(driver)
-#             try:
-#                 average = mean(fl_ranks[driver])
-#                 pct_avg = mean(fl_pct[driver])
-#             except StatisticsError:
-#                 continue
-#             inputdf.loc[len(inputdf)] = {"Driver": driver, "Team": team, "FL Average Rank": average, "Avg pct of FL pace": pct_avg} # type: ignore
-        
-
-#         av_av_ranks = {driver: mean(ranks) for driver, ranks in av_ranks.items() if ranks}
-#         av_av_pct = {driver: mean(pcts) for driver, pcts in av_pct.items() if pcts}
-        
-#         inputdf['AV Average Rank'] = [av_av_ranks.get(team, None) for team in inputdf['Driver']]
-#         inputdf['Avg pct of avg pace'] = [av_av_pct.get(team, None) for team in inputdf['Driver']] 
-    
-#     if selection == "Team":
-#         for team in fl_ranks:
-#             average = mean(fl_ranks[team])
-#             pct_avg = mean(fl_pct[team])
-#             inputdf.loc[len(inputdf)] = {"Team": team, "FL Average Rank": average, "Avg pct of FL pace": pct_avg} # type: ignore TBH I don't understand the error, but it works.
-        
-#         av_av_ranks = {team: mean(ranks) for team, ranks in av_ranks.items() if ranks}
-#         av_av_pct = {team: mean(pcts) for team, pcts in av_pct.items() if pcts}
-        
-#         inputdf['AV Average Rank'] = [av_av_ranks.get(team, None) for team in inputdf['Team']]
-#         inputdf['Avg pct of avg pace'] = [av_av_pct.get(team, None) for team in inputdf['Team']] 
-    
-#     if selection == "Lead Driver":
-#         new_rows = [{"Team": team, "FL Average Rank": mean(fl_ranks[team]), "Avg pct of FL pace": mean(fl_pct[team])} for team in fl_ranks]
-#         inputdf = inputdf.append(pd.DataFrame(new_rows), ignore_index=True) # type: ignore
-        
-#         av_av_ranks = {team: mean(ranks) for team, ranks in av_ranks.items() if ranks}
-#         av_av_pct = {team: mean(pcts) for team, pcts in av_pct.items() if pcts}
-        
-#         inputdf['AV Average Rank'] = [av_av_ranks.get(team, None) for team in inputdf['Team']] 
-#         inputdf['Avg pct of avg pace'] = [av_av_pct.get(team, None) for team in inputdf['Team']]
-    
-    
-#     inputdf = inputdf.sort_values('FL Average Rank').reset_index(drop=True)    
-#     return inputdf
-        
-
-
-
-
 # res = Q_lap_pace_calculator(selection="Lead Driver", includes_anomalous_quali=False, downforce=3)
 
 # # res = res.sort_values("Avg pct of avg pace").reset_index(drop=True)   
 
 # print(res)
-
-#
-# Team Sector ranks per DF.

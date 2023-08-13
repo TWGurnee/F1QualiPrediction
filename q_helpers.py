@@ -18,7 +18,25 @@ def check_average_laps(df, driver):
 # Using IQR instead and only removing the upper bound.
 
 def filter_anomalous_Q_laps(Q_session):
-    # Remove irrelevant data from the Quali Session
+    """
+    Filter and identify anomalies in Qualifying session lap data.
+
+    This function takes a Qualifying session object `Q_session` and performs the following steps:
+    1. Removes irrelevant data from the Quali Session.
+    2. Identifies accurate laps based on criteria.
+    3. Removes lap times that are considered anomalies.
+    4. Identifies drivers who did not set competitive laps.
+    
+    Args:
+        Q_session: A Qualifying session object containing lap data.
+
+    Returns:
+        tuple: A tuple containing the following elements:
+            - filtered_laps (DataFrame): A DataFrame containing lap data after removing anomalies.
+            - poor_q_ranks (dict or None): A dictionary mapping poor qualifying drivers to their positions
+              or None if all drivers set competitive laps.
+    """
+    
     k=2 # ************* Edit to adjust cutoff.
     
     
@@ -48,11 +66,9 @@ def filter_anomalous_Q_laps(Q_session):
 
     # Format the time as mm:ss.ms
     formatted_time = "{:02d}:{:02d}.{:03d}".format(int(minutes), int(seconds), int(milliseconds))
-
-    # Print the formatted time
     print(f"Cutoff laptime: {formatted_time}")
 
-    
+    # Remove anomalies
     filtered_laps = accurate_laps[accurate_laps['LapTime'] <= laptime_anomaly_threshold]
     
     # removed_laptimes = accurate_laps[accurate_laps['LapTime'] > laptime_anomaly_threshold]
@@ -84,6 +100,25 @@ def filter_anomalous_Q_laps(Q_session):
 
 
 def return_ranked_Q_laps(df, poor_q_ranks=None):
+    """
+    Rank drivers based on qualifying lap data.
+
+    This function takes a DataFrame `df` containing qualifying lap data and calculates ranks for drivers' fastest and
+    average lap times as well as sector times. It also provides the percentage off pace compared to the fastest lap.
+
+    Args:
+        df (DataFrame): A DataFrame containing qualifying lap data for drivers.
+        poor_q_ranks (dict, optional): A dictionary mapping drivers with poor qualifying laps to their positions.
+                                       Defaults to None.
+
+    Returns:
+        dict: A dictionary containing two DataFrames:
+            - "Fastest Laps": DataFrame with ranks for fastest lap times and sector times.
+            - "Average Laps": DataFrame with ranks for average lap times and sector times.
+              Both DataFrames include columns for Driver, Team, lap times, ranks, and percentage off pace.
+              If `poor_q_ranks` is provided, drivers with poor qualifying laps are included with appropriate data.
+    """
+    
     df['LapTime'] = pd.to_timedelta(df['LapTime'])
 
     # Find the fastest lap time for each driver
@@ -244,7 +279,23 @@ def return_ranked_Q_laps(df, poor_q_ranks=None):
 
 
 def pick_lead_driver(df, selection = "FL" or "AV"):
-     
+    """
+    Pick the lead driver from each team based on qualifying lap data.
+
+    This function takes a DataFrame `df` containing qualifying lap data and selects the lead driver for each team
+    based on either fastest lap or average lap time.
+
+    Args:
+        df (DataFrame): A DataFrame containing ranked qualifying lap data for drivers.
+        selection (str, optional): Selection criteria for picking the lead driver.
+                                   Choose between "FL" (Fastest Lap) or "AV" (Average Lap).
+                                   Defaults to "FL".
+
+    Returns:
+        DataFrame: A DataFrame with the lead drivers for each team based on the specified selection criteria.
+                   The DataFrame includes updated ranks and lap times according to the chosen selection.
+    """
+    
     if selection == "FL":
         result = df.groupby('Team').apply(lambda x: x.drop(x['FastestLapRank'].idxmax()) if len(x) > 1 else x)
         result = result.sort_values('FastestLapTime').reset_index(drop=True)
@@ -259,8 +310,5 @@ def pick_lead_driver(df, selection = "FL" or "AV"):
         result = result.sort_values('AverageLapTime').reset_index(drop=True)
         result['AverageLapRank'] = result['AverageLapTime'].rank(method='min')
         return result
-
-
-
 
 
