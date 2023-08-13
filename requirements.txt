@@ -1,0 +1,8 @@
+beautifulsoup4==4.11.2
+fastf1==3.0.7
+gspread==5.2.0
+gspread_dataframe==3.2.2
+matplotlib==3.5.0
+numpy==1.24.4
+pandas==1.3.4
+protobuf==3.19.4
