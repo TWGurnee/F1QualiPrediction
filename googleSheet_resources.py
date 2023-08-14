@@ -38,6 +38,16 @@ quali = sh.get_worksheet(0)
 
     
 def record_quali_ranks():
+    """
+    Record qualifying lap rankings in a Google Sheets document.
+
+    This function scrapes qualifying lap data, calculates pace rankings, and records the rankings
+    in a Google Sheets document. Rankings for lead drivers, teams, and drivers are recorded
+    separately on different parts of the sheet.
+
+    Returns:
+        None
+    """
     print_coords = [2, 1]
     
     scrape = scrape_all_quali_laps()

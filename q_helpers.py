@@ -312,3 +312,22 @@ def pick_lead_driver(df, selection = "FL" or "AV"):
         return result
 
 
+def return_quali_ranks_per_session():
+    # TODO
+    # Want to calculate the laps undertaken in each session and create ranks/pct off pace in reference to the leader for each session.
+    # in this way we can attempt to overcome any anomalous data specifically per session
+    # we can also account for wet conditions and track improvment on a dry track
+    
+    # to do this we want a generalised anomalous laptime removal for each Quali Session
+    
+    # Then we want to generate the ranks for each session (the number of drivers will decrease from Q1 to Q2 rto Q3)
+    
+    # Finally we are left with the question of what to do with the duplicate ranks.
+    # Averaging the ranks may take into account more poor performances, but the opposite affect happens when taking the best performances
+    # LAst five drivers clearly get their ranks decided in the Q1 session analysis, 
+    # drivers 11 - 15 have two sessions to choose from. They will have two ranks, which can be averaged.
+    # Each of these ranks are in comparison to the fastest laptime of the session, rather than the fastest laptime of the day
+    # This raises a question around strategy.
+    # I think ultimately the better cars will tend towards the top, and this reduction in anomaly may prove a better representation of the cars,
+    # but it is worth comparing methods
+    ...

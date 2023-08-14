@@ -14,7 +14,6 @@ from constants import *
 fastf1.Cache.enable_cache(r"M:\Coding\F1DataAnalysis\FastF1Cache")
 
 
-
 # We want one scrape to then collate all data into one structure.
 # First we scrape the races into new function adapted from below:
 # This function needs to get each session, and return 
@@ -180,7 +179,8 @@ def return_df_q_rankings(qualifying_ranks, downforce: int):
     lead_driver_fl_ranks, lead_driver_av_ranks, lead_driver_fl_pct, lead_driver_av_pct = {name: [] for name in team_names}, {name: [] for name in team_names}, {name: [] for name in team_names}, {name: [] for name in team_names}
     
     
-    
+    ## TODO Refactor with .groupby pandas function. Currently manually works as sprints can be added easily.
+    # There should be a way to include sprint results while also simplifying code
     
     for race in race_ranks.keys():
         
