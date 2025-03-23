@@ -12,6 +12,8 @@ import fastf1
 
 from secrets2.ss_key import sskey
 from quali_analysis import scrape_all_quali_laps, return_df_q_rankings #, Q_lap_pace_calculator
+from constants import *
+from q_helpers import return_quali_ranks_per_session
 
 
 fastf1.Cache.enable_cache(r"M:\Coding\F1DataAnalysis\FastF1Cache")
@@ -35,6 +37,8 @@ credentials = service_account.Credentials.from_service_account_info(
 gc = gspread.service_account(filename=CREDS)  # Check GSheets Creds
 sh = gc.open_by_key(sskey)  # Get SpreadSheet
 quali = sh.get_worksheet(0)
+races = sh.get_worksheet(1)
+new_quali = sh.get_worksheet(2)
 
     
 def record_quali_ranks():
@@ -68,4 +72,37 @@ def record_quali_ranks():
         print_coords[0]+=23
         print_coords[1]=1       
 
-record_quali_ranks()
+#record_quali_ranks()
+
+
+def record_race_pcts():
+
+    print_coords = [1, 1]
+
+    for race in RACES:
+        try:
+            races.update_cell(row=print_coords[0], col=print_coords[1], value=race)
+            print_coords[0]+=1
+            Q = fastf1.get_session(2023, race, "Q") 
+            Q.load()
+            pcts = return_quali_ranks_per_session(Q)
+
+            set_with_dataframe(races, pcts, row=print_coords[0], col=print_coords[1])
+
+            if race in SPRINTS:
+                print_coords[1]+=10
+                Q = fastf1.get_session(2023, race, 3) 
+                Q.load()
+                pcts = return_quali_ranks_per_session(Q)
+                set_with_dataframe(races, pcts, row=print_coords[0], col=print_coords[1])
+
+            
+            print_coords[0]+=24
+            print_coords[1]=1
+        
+        
+        except Exception as e:
+            print(e)
+            break
+        
+record_race_pcts()

@@ -312,13 +312,87 @@ def pick_lead_driver(df, selection = "FL" or "AV"):
         return result
 
 
-def return_quali_ranks_per_session():
+def return_quali_ranks_per_session(Q_session):
+    
+    results = Q_session.results
+    
+    results = results.sort_values('Q1').reset_index(drop=True)
+    fastest_q1 = pd.to_timedelta(results.loc[0, "Q1"])  # type: ignore
+    results["Q1 pct"] = ((pd.to_timedelta(results["Q1"]) - fastest_q1) / fastest_q1 * 100)
+    
+    results = results.sort_values('Q2').reset_index(drop=True)
+    fastest_q2 = pd.to_timedelta(results.loc[0, "Q2"])  # type: ignore
+    results["Q2 pct"] = ((pd.to_timedelta(results["Q2"]) - fastest_q2) / fastest_q2 * 100)
+    
+    results = results.sort_values('Q3').reset_index(drop=True)
+    fastest_q3 = pd.to_timedelta(results.loc[0, "Q3"])  # type: ignore
+    results["Q3 pct"] = ((pd.to_timedelta(results["Q3"]) - fastest_q3) / fastest_q3 * 100)
+    
+    
+    
+    # results["Av pct"] = results[["Q1 pct", "Q2 pct", "Q3 pct"]].mean(axis=1, skipna=True)
+    
+    # final = results[["Position", "Abbreviation", "Q1 pct",  "Q2 pct",  "Q3 pct", "Av pct"]]
+    # final = final.sort_values("Av pct")
+    
+    
+    threshold = 10  # Change this to the desired threshold value
+
+    # Filter out values above the threshold
+    results.loc[
+        (results["Q1 pct"].abs() > threshold) |
+        (results["Q2 pct"].abs() > threshold) |
+        (results["Q3 pct"].abs() > threshold),
+        ["Q1 pct", "Q2 pct", "Q3 pct"]
+    ] = np.nan
+
+
+    # Calculate the average of the filtered percentage change columns using numpy.nanmean()
+    results["Av pct"] = results[["Q1 pct", "Q2 pct", "Q3 pct"]].apply(
+        lambda row: np.nan if np.isnan(row).all() else np.nanmean(row) if np.count_nonzero(~np.isnan(row)) > 0 else np.nan,
+        axis=1
+    )
+
+    final = results[["Position", "Abbreviation", "Q1 pct", "Q2 pct", "Q3 pct", "Av pct"]]
+    final = final.sort_values("Av pct")
+    
+    return final
+
+
+
+    
+    # relevant_data = Q_session.laps # [["Driver", "Team", "LapTime", "Sector1Time", "Sector2Time", "Sector3Time", "TyreLife", "IsAccurate", "Deleted"]]
+    # accurate_laps = relevant_data[(relevant_data["IsAccurate"] == True) & (relevant_data["Deleted"] == False)]
+      
+    # q1, q2, q3 = accurate_laps.split_qualifying_sessions()
+    
+    # #q1
+    # q1_fastest = q1.pick_fastest()["LapTime"]
+    
+    
+    
+    # #q2 
+    # q2_fastest = q2.pick_fastest()["LapTime"]
+    
+    
+    # #q3
+    # q3_fastest = q3.pick_fastest()["LapTime"]
+    
+    
     # TODO
     # Want to calculate the laps undertaken in each session and create ranks/pct off pace in reference to the leader for each session.
     # in this way we can attempt to overcome any anomalous data specifically per session
     # we can also account for wet conditions and track improvment on a dry track
     
     # to do this we want a generalised anomalous laptime removal for each Quali Session
+    
+    
+    ####### 
+    ##### fastest_lap = q1.pick_fastest()
+    #### q2.pick_fastest()["LapTime"]
+    
+    # get fastest for each driver and calc pct off pace. 
+    
     
     # Then we want to generate the ranks for each session (the number of drivers will decrease from Q1 to Q2 rto Q3)
     
@@ -330,4 +404,9 @@ def return_quali_ranks_per_session():
     # This raises a question around strategy.
     # I think ultimately the better cars will tend towards the top, and this reduction in anomaly may prove a better representation of the cars,
     # but it is worth comparing methods
+    
+    
+    # To remove anomalous laps, and then create a pace ranking, this would be combining the above two functions together, I propose a blank anomaly function
+    # followed by a ranking function. As in this case we are not concerned with the average laps (other method is fairer as it considers all laps)
+    # Ranking function to only consider percentage off pace per quali - should be simpler.
     ...
